@@ -1,0 +1,39 @@
+#!/bin/bash
+
+CONFIGFILE="$HOME/.config/pixelpost.conf"
+
+if [ ! -f "$CONFIGFILE" ]; then
+    echo "$CONFIGFILE does not exist. you need to set up pixelpost config first."
+    exit 1
+fi
+
+source $CONFIGFILE
+
+for i in "$@"; do
+
+file=$i
+
+# TODO: probably doesn't work with newlines in comments
+
+description=$(exiftool -t -UserComment "$file" | cut -f 2)
+echo "Description: $description"
+
+checksum=$(sha256sum "$file" | cut -f 1 -d " " )
+
+uploadinfo=$(curl --silent --header "Authorization: Bearer $ACCESSTOKEN" --header "Idempotency-Key: $checksum" -X POST --form "description=\"$description\"" --form file=@"$file" https://$SERVER/api/v1/media)
+
+media_id=$(echo "$uploadinfo"| jq '.id' | cut -d'"' -f 2)
+echo "Uploaded media_id: $media_id"
+
+# to post to collection: collection_ids[]=$collection_id
+
+curl --silent --header "Authorization: Bearer $ACCESSTOKEN" -X POST --form "media_ids[]=$media_id" https://$SERVER/api/v1/statuses | jq '.url'
+
+done
+
+if [ $# -eq 0 ]; then
+    echo "pixelfed/mastodon media poster"
+    >&2 echo "usage: $0 file[s]"
+    exit 1
+fi
+

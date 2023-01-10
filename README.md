@@ -4,7 +4,7 @@ simple bash script, uses curl and jq
 
 `usage: ./pixelpost file[s]`
 
- - uses image description from exif datai (UserComment) (probably doesn't work with newlines yet)
+ - uses image description from exif data (UserComment) (probably doesn't work with newlines yet)
 
  - almost no error checking, handle with care
 
